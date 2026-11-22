@@ -1,0 +1,6 @@
+/build/
+/build-*/
+/firmware/build/
+*.o
+*.obj
+__pycache__/
