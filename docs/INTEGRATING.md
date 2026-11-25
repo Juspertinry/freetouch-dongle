@@ -92,7 +92,10 @@ stamped from the headset's IMU timestamps; with the dongle:
 
 - each input record's `poll_us` is the dongle's clock (us) at the poll it answered;
 - status code 7 (every 10 ms) carries a poll timestamp even with no controller connected;
-- exposures fall on the exposure period (19200 us by default) of the dongle's clock.
+- exposures fall where the 32-bit `poll_us` clock is a multiple of the exposure period (19200 us by
+  default). The sensors and controllers work on the 32-bit value, and 2^32 is not a multiple of the
+  period, so the grid starts over at each wrap: a grid kept running on an extended 64-bit clock is
+  4096 us off after the first wrap and further after each one (measured on hardware).
 
 Map the dongle's clock to your host clock with a lower-envelope fit of (`poll_us`, arrival time):
 the fastest records of each second bound the mapping from above.
