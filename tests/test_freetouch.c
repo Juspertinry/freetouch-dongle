@@ -127,6 +127,19 @@ test_parser(void)
 	CHECK(in.report[0] == 0x40 && in.report[24] == 0x58);
 	CHECK(p.missing == 1); // sequence 10, then 12
 	CHECK(freetouch_parser_next(&p, &in, &st, &reply) == FREETOUCH_RECORD_NONE);
+
+	// the dongle restarted (sequence 3 after 12), then one record lost (3, then 5): a step back
+	// counts nothing, the gap after it counts one
+	const uint32_t sequences[2] = {3, 5};
+	for (int i = 0; i < 2; i++) {
+		space = freetouch_parser_space(&p, &room);
+		CHECK(room >= FREETOUCH_RECORD_SIZE);
+		memcpy(space, stream, FREETOUCH_RECORD_SIZE);
+		put32(space + 4, sequences[i]);
+		freetouch_parser_filled(&p, FREETOUCH_RECORD_SIZE);
+		CHECK(freetouch_parser_next(&p, &in, &st, &reply) == FREETOUCH_RECORD_INPUT);
+	}
+	CHECK(p.missing == 2);
 }
 
 static void

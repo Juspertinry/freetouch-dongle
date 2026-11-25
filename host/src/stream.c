@@ -296,8 +296,10 @@ freetouch_parser_next(struct freetouch_parser *p,
 		p->pos += FREETOUCH_RECORD_SIZE;
 
 		const uint32_t sequence = rd32(r + 4);
-		if (p->have_sequence && sequence - p->last_sequence > 1) {
-			p->missing += sequence - p->last_sequence - 1;
+		// a step back is a restarted dongle, not ~4 billion lost records
+		const int32_t step = (int32_t)(sequence - p->last_sequence);
+		if (p->have_sequence && step > 1) {
+			p->missing += (uint32_t)step - 1;
 		}
 		p->last_sequence = sequence;
 		p->have_sequence = true;
