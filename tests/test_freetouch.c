@@ -51,6 +51,16 @@ test_decrypt(void)
 	CHECK(!freetouch_decrypt(wrong, uplink, poll_us, report));
 	// six or more slots late is past what the link allows
 	CHECK(!freetouch_decrypt(key, uplink, poll_us - 4 * 2000, report));
+
+	// a poll 2000 us before the 32-bit clock wraps, answered two slots late: the slot time wraps
+	// to 0x7d0 (same key and report, Python's AESCCM)
+	static const uint8_t wrapped[FREETOUCH_UPLINK_SIZE] = {
+	    0x00, 0x00, 0x03, 0x00, 0x00, 0x3e, 0xce, 0xf1, 0xff, 0x77, 0x3b, 0x36, 0xde, 0x38, 0x65, 0x94, 0x93,
+	    0x52, 0x3e, 0xf1, 0x89, 0xc3, 0x49, 0xf8, 0x9c, 0x98, 0x8e, 0xd0, 0x29, 0x74, 0x55, 0x08, 0x65, 0x7c};
+	CHECK(freetouch_decrypt(key, wrapped, 0xfffff830u, report));
+	for (int i = 0; i < FREETOUCH_REPORT_SIZE; i++) {
+		CHECK(report[i] == 0x40 + i);
+	}
 }
 
 static void

@@ -97,6 +97,12 @@ stamped from the headset's IMU timestamps; with the dongle:
 Map the dongle's clock to your host clock with a lower-envelope fit of (`poll_us`, arrival time):
 the fastest records of each second bound the mapping from above.
 
+`poll_us` is 32 bits and wraps every 71.6 minutes. That is the CV1 link's own width: every poll
+carries it, the headset sends the same field, and the controllers build their nonce from it, so it
+cannot be widened. Extend it on the host: take each new value's step from the last as a signed
+32-bit difference and add that to a 64-bit clock. Records arrive a slot or two out of order, so a
+small negative step is a late record, not a wrap.
+
 ## Haptics, pairing and sleep
 
 Build the commands with `freetouch_cmd_haptic`, `freetouch_cmd_pair`, `freetouch_cmd_sleep` and the

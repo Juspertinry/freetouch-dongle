@@ -174,7 +174,10 @@ freetouch_decrypt(const uint8_t key[16],
 	// the headset sends as 0 (firmware before 0x020B sent 1, tried second).
 	for (unsigned attempt = 0; attempt < 12; attempt++) {
 		const unsigned late = attempt % 6;
-		const uint64_t t = ((uint64_t)poll_us + late * 2000ull) | ((uint64_t)(attempt < 6 ? 0 : 1) << 32);
+		// the slot time wraps at 32 bits like the poll's own timestamp: a late slot past the wrap
+		// must not carry into byte 4
+		const uint32_t slot = poll_us + late * 2000u;
+		const uint64_t t = (uint64_t)slot | ((uint64_t)(attempt < 6 ? 0 : 1) << 32);
 		uint8_t nonce[13] = {0, 0, 0, 0, 0, 0x5c, 0xcf};
 		for (int i = 0; i < 6; i++) {
 			nonce[7 + i] = (uint8_t)(t >> (8 * i));
