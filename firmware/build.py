@@ -46,6 +46,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--exposure-period", type=int, default=19200,
                     help="camera period the polls announce, us (19200 is the Rift's)")
+    ap.add_argument("--clock-start", type=lambda v: int(v, 0), default=0,
+                    help="where the us clock starts at boot; e.g. 0xF5456B00 wraps 3 minutes in (testing)")
     ap.add_argument("--name", default="freetouch-dongle")
     args = ap.parse_args()
 
@@ -61,7 +63,7 @@ def main():
     cmd = [tool("arm-none-eabi-gcc"), "-mcpu=cortex-m4", "-mthumb", "-mfloat-abi=soft", "-O2", "-g",
            "-ffreestanding", "-nostdlib", "-fno-builtin", "-Wall", "-Wextra", "-Werror", "-fno-common",
            "-ffunction-sections", "-fdata-sections", "-DNRF52840_XXAA", "-DCFG_TUSB_MCU=OPT_MCU_NRF5X",
-           f"-DDM_EXPOSURE_PERIOD_US={args.exposure_period}u"]
+           f"-DDM_EXPOSURE_PERIOD_US={args.exposure_period}u", f"-DDM_CLOCK_START={args.clock_start}u"]
     for inc in includes:
         cmd += ["-I", str(inc)]
     cmd += ["-T", str(HERE / "link.ld"), "-Wl,--gc-sections", f"-Wl,-Map,{OUT / (args.name + '.map')}",

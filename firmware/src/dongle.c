@@ -115,7 +115,12 @@ static volatile uint8_t identity_due;
 static void stream_status(uint32_t code,uint32_t a,uint32_t b);
 static uint32_t hop_status(void);
 
-static uint32_t now(void) { TIMER0_TASKS_CAPTURE0=1; return TIMER0_CC0; }
+/* Where the us clock starts at boot. A test build sets it just short of 2^32 to reach the wrap
+ * (every 71.6 min) in seconds: build.py --clock-start. */
+#ifndef DM_CLOCK_START
+#define DM_CLOCK_START 0u
+#endif
+static uint32_t now(void) { TIMER0_TASKS_CAPTURE0=1; return TIMER0_CC0+DM_CLOCK_START; }
 static int before(uint32_t deadline) { return (int32_t)(now()-deadline)<0; }
 static void reboot(void);
 /* 'K' poll layout bits (20-byte payload, byte 11 = 0, session byte 0) match a sniffed CV1 headset; 0 restores the 0x020A poll. */
