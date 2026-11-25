@@ -9,7 +9,7 @@ void tusb_hal_nrf_power_event(uint32_t event);
 
 /* Reported as status code 5; bump on every release image. */
 #ifndef DM_FW_REV
-#define DM_FW_REV 0x0301u
+#define DM_FW_REV 0x0302u
 #endif
 #define LED (1u<<15)
 #define GPIO_SET REG(0x50000508u)
@@ -46,8 +46,8 @@ static uint8_t address[5], key[16];
 #define HOP_AUTO 0xffu
 static volatile uint8_t hop_inc, hop_mode=HOP_AUTO, hop_learning;
 static uint8_t hop_stored(void);
-/* 'V' haptics (opcode 3): it never times out, so the host sends amp 0 to stop.
- * Unacknowledged, so it goes out on three polls. */
+/* 'V' haptics (opcode 3): it never times out, so the host sends amp 0 to stop, and the dongle
+ * sends it itself when the host lets go of the port. Unacknowledged, so it goes out on three polls. */
 static volatile uint8_t haptic_repeat[2];
 /* 'P' pairs the next controller for up to 60 s; status 6: 1 pairing, 2 paired, 3 failed, 4 timed out. */
 static volatile uint8_t pair_requested;
@@ -594,6 +594,11 @@ static void read_link(void)
         ts=next; next+=SLOT_US;
         build_poll(ts,index,link_sid,hop); polls++;
         if(host_attached()) host_gone=0; else if(host_gone<0xffffffffu) host_gone++;
+        /* the Touch buzzes until told amplitude 0: a host that crashed mid-buzz never sends it */
+        if(host_gone==1u) {
+            unsigned k;
+            for(k=0;k<2u;k++) if(haptic_amp[k]) { haptic_amp[k]=0; haptic_repeat[k]=3; }
+        }
         if(polls>=timeout_due || keepalive_kick) { keepalive_kick=0; timeout_burst=ACTIVE_TIMEOUT_BURST; timeout_due=polls+ACTIVE_TIMEOUT_EVERY_POLLS; }
         if(!keepalive_on || sleep_seq) timeout_burst=0;
         sent_opcode=0;
@@ -804,8 +809,17 @@ int main(void)
     for(i=0;i<10000u;i++) usb_service();
     stream_status(1,(uint32_t)search_link(),fault);
     for(;;) {
-        if(fault) goto done;
+        if(fault) {
+            /* The radio stopped answering. Power-cycling the peripheral resets every register, and
+             * radio_config sets them again: better than a dongle that stays dead until a replug, or
+             * a reboot, which re-enumerates USB under the host. Status 1 says it happened. */
+            uint32_t resume=now()+100000u;
+            stream_status(1,0u,fault);
+            RADIO_POWER=0; RADIO_POWER=1; fault=0;
+            while(before(resume)) usb_service();
+        }
         radio_config(0,1); read_link();
+        if(fault) continue;
         if(pair_requested) {
             pair_requested=0u; fault=0;
             stream_status(6,1u,0u);

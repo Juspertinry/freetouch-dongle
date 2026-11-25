@@ -26,7 +26,8 @@ extern "C" {
 //! Status record codes.
 enum freetouch_status_code
 {
-	//! After boot: a = 1 when a paired controller was found, b = a fault code (0 none).
+	//! After boot: a = 1 when a paired controller was found, b = a fault code (0 none). From 0x0302
+	//! also after the radio stopped answering and was restarted: a = 0, b = the fault code.
 	FREETOUCH_STATUS_BOOT = 1,
 	//! a = polls sent, b = replies (low 16 bits) | overruns << 16, every 5 s.
 	FREETOUCH_STATUS_HEARTBEAT = 2,

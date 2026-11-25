@@ -44,7 +44,7 @@ session and differ by reply slot.
 
 | Code | When | a | b / raw |
 |---|---|---|---|
-| 1 | after boot | 1 when a paired controller answered | fault code, 0 none |
+| 1 | after boot, and after the radio recovered from a fault (0x0302+) | 1 when a paired controller answered (0 after a fault) | fault code, 0 none |
 | 2 | every 5 s | polls sent | replies (low 16 bits), overruns << 16 |
 | 3 | every 5 s | 0x04 \| IR-config acks << 8 | 0x0f \| acks << 8 |
 | 4 | every 5 s, per reply slot heard | slot << 24 \| replies | when the replies ended, us after the poll: min \| max << 12 \| (average / 16) << 24 |
@@ -125,7 +125,7 @@ ignored.
 | `P` | | pair the next controller in pairing mode, within 60 s; status code 6 reports the result |
 | `U` | LE16 us | the reply delay the next `P` writes to the controller, 400-1620 us |
 | `Q` | byte 0-4 | the next `P`'s reply slot by number: 1-3 = 1000/1250/1500 us, 4 = 750 us, 0 = by hand |
-| `V` | session, amplitude, LE16 frequency | vibrate that session's controllers, amplitude 0-255 until 0 is sent; frequency >= 320 buzzes at 320 Hz, below at 160 Hz |
+| `V` | session, amplitude, LE16 frequency | vibrate that session's controllers, amplitude 0-255 until 0 is sent (or, from 0x0302, the host closes the port); frequency >= 320 buzzes at 320 Hz, below at 160 Hz |
 | `Z` | byte (ignored) | power the controllers off; a button wakes each |
 | `A` | byte | 1: keep the controllers from dozing (refreshed every 30 min; the default); 0: let them doze and power off on their own |
 | `L` | LE32 us | the controllers' IR LED pulse width, 2-15000 us (default 35) |
